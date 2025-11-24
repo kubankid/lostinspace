@@ -56,6 +56,42 @@ function StarField({ count = 1000 }) {
   );
 }
 
+function GradientBackground() {
+  const shaderMaterial = useMemo(() => {
+    return new THREE.ShaderMaterial({
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        varying vec2 vUv;
+        void main() {
+          vec3 topColor = vec3(0.1, 0.0, 0.2);
+          vec3 middleColor = vec3(0.0, 0.1, 0.2);
+          vec3 bottomColor = vec3(0.0, 0.0, 0.0);
+          
+          float mixTop = smoothstep(0.3, 0.7, vUv.y);
+          vec3 color = mix(bottomColor, middleColor, mixTop);
+          color = mix(color, topColor, smoothstep(0.7, 1.0, vUv.y));
+          
+          gl_FragColor = vec4(color, 1.0);
+        }
+      `,
+      side: THREE.DoubleSide
+    });
+  }, []);
+
+  return (
+    <mesh position={[2, 1, -25]} scale={[150, 100, 1]}>
+      <planeGeometry />
+      <primitive object={shaderMaterial} attach="material" />
+    </mesh>
+  );
+}
+
 function Scene({ setLeftNode, setCenterNode, setRightNode }) {
   // Hardcoded values based on user approval
   const camPos = [2, 2.5, 32];
@@ -100,6 +136,9 @@ function Scene({ setLeftNode, setCenterNode, setRightNode }) {
       <pointLight position={[10, 10, 10]} intensity={1} color="#00ffff" />
       <pointLight position={[-10, 10, -10]} intensity={1} color="#ff00ff" />
       <pointLight position={[0, 5, 0]} intensity={0.5} color="#ffffff" />
+
+      {/* Gradient Background */}
+      <GradientBackground />
 
       {/* StarField Background */}
       <StarField />
