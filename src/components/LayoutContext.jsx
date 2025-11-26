@@ -4,9 +4,17 @@ const LayoutContext = createContext({
     leftNode: null,
     centerNode: null,
     rightNode: null,
+    menuNode: null,
+    shopOpen: false,
+    statusOpen: false,
+    menuOpen: false,
     setLeftNode: () => { },
     setCenterNode: () => { },
-    setRightNode: () => { }
+    setRightNode: () => { },
+    setMenuNode: () => { },
+    setShopOpen: () => { },
+    setStatusOpen: () => { },
+    setMenuOpen: () => { }
 });
 
 export const useLayout = () => useContext(LayoutContext);

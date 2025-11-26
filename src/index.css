@@ -382,18 +382,21 @@ h1 {
 
 .game-board {
   flex: 1;
-  flex: 1;
-  background: transparent;
-  border: none;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   padding: 1rem;
   position: relative;
-  box-shadow: inset 0 0 40px var(--accent-color);
   height: 100%;
   box-sizing: border-box;
   overflow: hidden;
+
+  /* Just Outlines */
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: none;
+  backdrop-filter: none;
+  border-radius: 12px;
 }
 
 /* Cards */
@@ -504,19 +507,22 @@ h1 {
 }
 
 /* Controls */
+/* Controls */
 .controls {
   display: flex;
   gap: 1rem;
   justify-content: center;
   padding: 1rem;
-  border: 4px solid var(--text-color);
+  border: none;
+  margin-top: auto;
   margin-top: auto;
   margin-top: 2rem;
-  background: var(--glass-bg);
-  backdrop-filter: var(--glass-backdrop);
-  -webkit-backdrop-filter: var(--glass-backdrop);
-  border: var(--glass-border);
-  box-shadow: var(--glass-shadow);
+  margin-bottom: 4rem;
+  /* Lift up a tiny bit */
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
 }
 
 button {
@@ -555,15 +561,15 @@ button:disabled {
 
 /* Primary Action Buttons */
 .controls button {
-  border-color: var(--warning-color);
-  color: var(--warning-color);
-  box-shadow: 4px 4px 0 var(--warning-color);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  box-shadow: 4px 4px 0 var(--primary-color);
 }
 
 .controls button:hover {
-  background: var(--warning-color);
+  background: var(--primary-color);
   color: #000;
-  box-shadow: 6px 6px 0 var(--warning-color);
+  box-shadow: 6px 6px 0 var(--primary-color);
 }
 
 /* Betting */
@@ -594,6 +600,37 @@ button:disabled {
   border-color: var(--accent-color);
   color: var(--accent-color);
   box-shadow: 3px 3px 0 var(--accent-color);
+}
+
+/* Menu Buttons */
+.menu-btn {
+  width: 100%;
+  padding: 15px;
+  font-size: 1.2rem;
+  background: transparent;
+  border: 2px solid var(--primary-color);
+  color: var(--primary-color);
+  box-shadow: 0 0 10px var(--primary-color);
+  transition: all 0.2s ease;
+}
+
+.menu-btn:hover {
+  background: var(--primary-color);
+  color: #000;
+  box-shadow: 0 0 20px var(--primary-color);
+  transform: scale(1.05);
+}
+
+.menu-btn.quit {
+  border-color: var(--danger-color);
+  color: var(--danger-color);
+  box-shadow: 0 0 10px var(--danger-color);
+}
+
+.menu-btn.quit:hover {
+  background: var(--danger-color);
+  color: #fff;
+  box-shadow: 0 0 20px var(--danger-color);
 }
 
 .bet-buttons button:hover {

@@ -11,6 +11,7 @@ import HUD from './components/HUD';
 import ChipStack from './components/ChipStack';
 
 import Shop from './components/Shop';
+import StartMenu from './components/StartMenu';
 import { soundManager } from './lib/audio';
 import './index.css';
 
@@ -18,23 +19,15 @@ import Room from './components/Room';
 
 import { createPortal } from 'react-dom';
 import { useLayout } from './components/LayoutContext';
-import { useControls } from 'leva';
 
 function Game() {
-  // Debug Button Position Controls
-  const { debugX, debugY } = useControls('Debug Button Pos', {
-    debugX: { value: 10, min: 0, max: 2000, step: 1 },
-    debugY: { value: 10, min: 0, max: 1000, step: 1 }
-  });
-
   // Game State
   const [deck, setDeck] = useState(new Deck());
   const [playerHands, setPlayerHands] = useState([]); // Array of { cards: [], bet: number, status: 'playing'|'stood'|'busted'|'blackjack' }
   const [currentHandIndex, setCurrentHandIndex] = useState(0);
   const [dealerHand, setDealerHand] = useState([]);
-  const [gameState, setGameState] = useState('initial'); // initial, playing, finished, shop, gameover
+  const [gameState, setGameState] = useState('initial'); // initial, playing, finished, shop, gameover, start_menu
   const [message, setMessage] = useState('');
-  const [showDebug, setShowDebug] = useState(false);
 
   // Economy & Progression State
   const [chips, setChips] = useState(INITIAL_CHIPS);
@@ -68,7 +61,15 @@ function Game() {
     }
   };
 
-  const { leftNode, centerNode, rightNode } = useLayout();
+  const { leftNode, centerNode, rightNode, menuNode, menuOpen, setMenuOpen } = useLayout();
+
+  const toggleMenu = () => {
+    setMenuOpen(prev => !prev);
+  };
+
+  const handleQuit = () => {
+    window.close();
+  };
 
   const deal = () => {
     if (handIndex >= HANDS_PER_ROUND) {
@@ -123,19 +124,6 @@ function Game() {
 
     // Check for immediate Blackjack
     if (isBlackjack(pHand)) {
-      // If blackjack, we need to resolve immediately. 
-      // Since we just set state, we can't rely on it yet. 
-      // But for single hand blackjack, it's simple.
-      // We'll handle it via a slightly modified handleRoundEnd or just call it here.
-      // However, handleRoundEnd now needs to handle multiple hands.
-      // For now, let's just mark the hand as blackjack and resolve.
-
-      // Actually, let's defer resolution to a useEffect or just call a modified resolve
-      // But to keep it simple for this step, let's just call handleRoundEnd with the single hand structure
-      // We will need to refactor handleRoundEnd next.
-
-      // Temporary: passing array as before to not break everything immediately, 
-      // but we will refactor handleRoundEnd to take hands array.
       handleRoundEnd([{ cards: pHand, bet: currentBet, status: 'blackjack' }], dHand);
     }
   };
@@ -224,8 +212,6 @@ function Game() {
     let currentDealerHand = [...dealerHand];
 
     // Dealer plays according to trait
-    // Dealer only plays if at least one player hand is NOT busted/blackjack (optional rule, but standard is dealer plays out)
-    // Actually, if all player hands are busted, dealer doesn't need to play.
     const allBusted = hands.every(h => h.status === 'busted');
 
     if (!allBusted) {
@@ -233,20 +219,10 @@ function Game() {
         currentDealerHand.push(deck.draw());
       }
       setDealerHand(currentDealerHand);
-    } else {
-      // Reveal dealer cards if they haven't been fully revealed (though they are usually hidden until now)
-      // If we want to show the hole card, we just set the state.
-      // But wait, if dealer doesn't play, we still want to show their hand?
-      // Yes, usually.
     }
 
     const dValue = calculateHandValue(currentDealerHand);
     const dBlackjack = isBlackjack(currentDealerHand);
-
-    // Calculate results for each hand
-    // We need to pass the results to handleRoundEnd
-    // But handleRoundEnd expects to calculate payouts.
-    // Let's refactor handleRoundEnd to accept the final hands state and dealer hand.
 
     handleRoundEnd(hands, currentDealerHand);
   };
@@ -281,9 +257,6 @@ function Game() {
       if (hasSecondChance) {
         const savedCards = updatedHand.cards.slice(0, -1);
         updatedHand.cards = savedCards;
-        // Revert bet doubling? Usually second chance saves the bust, but does it revert the double?
-        // Let's say it keeps the double bet but saves the hand.
-
         newHands[currentHandIndex] = updatedHand;
         setPlayerHands(newHands);
 
@@ -308,7 +281,6 @@ function Game() {
   const split = () => {
     const currentHand = playerHands[currentHandIndex];
 
-    // Validation (should be handled by UI disable state too)
     if (chips < currentHand.bet) {
       setMessage('Not enough chips to Split!');
       return;
@@ -316,10 +288,6 @@ function Game() {
 
     if (currentHand.cards.length !== 2) return;
 
-    // Check rank equality (or value equality? Standard is rank, but 10-J-Q-K are all 10 value)
-    // Let's go with strict rank equality for now to be safe, or value equality if we want to be generous.
-    // Standard blackjack usually allows splitting 10-value cards (e.g. J and K).
-    // Let's use value equality.
     const card1Value = calculateHandValue([currentHand.cards[0]]);
     const card2Value = calculateHandValue([currentHand.cards[1]]);
 
@@ -349,16 +317,10 @@ function Game() {
     };
 
     // Replace current hand with these two
-    // We insert them at currentHandIndex
     newHands.splice(currentHandIndex, 1, hand1, hand2);
 
     setPlayerHands(newHands);
     setMessage('Split!');
-
-    // Check for Aces split - usually you only get one card and then stand.
-    // But for simplicity, let's treat them as normal hands for now unless we want strict rules.
-    // Strict rule: Split Aces get 1 card only.
-    // Let's keep it simple: Normal play.
   };
 
   const handleRoundEnd = (hands, dHand) => {
@@ -376,10 +338,8 @@ function Game() {
       if (hand.status === 'busted') {
         result = 'bust';
       } else if (hand.status === 'blackjack') {
-        // If we marked it as blackjack during deal/split
         result = 'blackjack';
       } else {
-        // Compare with dealer
         if (pBlackjack) {
           if (dBlackjack) {
             result = 'push';
@@ -424,7 +384,6 @@ function Game() {
       const hasSafetyNet = inventory.some(i => i.id === 'safety_net');
       if (payout === 0 && hasSafetyNet) {
         payout += 5;
-        // Only apply once per round or per hand? Let's say per hand for now to be generous
       }
 
       const hasHighRoller = inventory.some(i => i.id === 'high_roller');
@@ -436,8 +395,7 @@ function Game() {
     });
 
     if (totalPayout > 0 && !roundMessages.some(m => m.includes('Win') || m.includes('Blackjack'))) {
-      // If we got money back but didn't win (e.g. push or safety net), play chip sound if not already played
-      // soundManager.playChip(); // Already played in loop if push
+      // soundManager.playChip(); 
     } else if (totalPayout === 0) {
       soundManager.playLose();
     }
@@ -459,27 +417,24 @@ function Game() {
       const newChips = chips + totalPayout;
       const newHandIndex = handIndex + 1;
 
-      // Check if we just completed the 5th hand (end of round)
       if (newHandIndex === HANDS_PER_ROUND) {
-        // Debt enforcement: must pay debt before continuing
-        const currentDebt = calculateDebt(round, inventory.some(i => i.id === 'charity') ? ['charity'] : []);
+        setGameState('round_resolution');
 
-        if (newChips < currentDebt) {
-          // Can't afford debt - game over
-          setTimeout(() => {
+        setTimeout(() => {
+          const currentDebt = calculateDebt(round, inventory.some(i => i.id === 'charity') ? ['charity'] : []);
+
+          if (newChips < currentDebt) {
             setGameState('gameover');
             setMessage(`Game Over! You can't afford your debt of $${currentDebt}.`);
-          }, 1500);
-        } else {
-          // Can afford debt - force payment
-          setGameState('debt_due');
-          setMessage(`Round ${round} complete! You must pay your debt of $${currentDebt}.`);
-        }
-        setHandIndex(newHandIndex);
+          } else {
+            setGameState('debt_due');
+            setMessage(`Round ${round} complete! You must pay your debt of $${currentDebt}.`);
+          }
+          setHandIndex(newHandIndex);
+        }, 3000);
         return;
       }
 
-      // If player can't afford current bet, force them to adjust
       if (newChips < currentBet) {
         setGameState('betting');
       } else {
@@ -487,8 +442,6 @@ function Game() {
       }
       setHandIndex(newHandIndex);
     } else {
-      // Player is going broke, but we want to show the result (reveal cards) 
-      // during the timeout before the Game Over screen appears.
       setGameState('finished');
     }
   };
@@ -514,7 +467,6 @@ function Game() {
       setChips(prev => prev - debt);
       soundManager.playChip();
 
-      // Calculate new debt and advance round
       const modifiers = [];
       if (inventory.some(i => i.id === 'charity')) modifiers.push('charity');
 
@@ -523,7 +475,6 @@ function Game() {
       setHandIndex(0);
       setGameState('betting');
 
-      // Randomize Dealer Trait for next round
       const traits = ['standard', 'aggressive', 'conservative'];
       setDealerTrait(traits[Math.floor(Math.random() * traits.length)]);
 
@@ -543,7 +494,6 @@ function Game() {
       setHandIndex(0);
       setGameState('initial');
 
-      // Randomize Dealer Trait for next round
       const traits = ['standard', 'aggressive', 'conservative'];
       setDealerTrait(traits[Math.floor(Math.random() * traits.length)]);
 
@@ -569,17 +519,14 @@ function Game() {
 
   const toggleShop = () => {
     if (gameState === 'shop') {
-      // Return to previous state
       setGameState(previousGameState || 'initial');
       setPreviousGameState(null);
     } else {
-      // Go to shop
       setPreviousGameState(gameState);
       setGameState('shop');
     }
   };
 
-  // Render Logic
   return (
     <>
       {/* Left Screen: Shop */}
@@ -598,7 +545,20 @@ function Game() {
 
       {/* Center Screen: Game Board */}
       {centerNode && createPortal(
-        <div className="app" style={{ background: 'transparent' }}>
+        <div className="app" style={{ background: 'transparent', position: 'relative' }}>
+          {/* Menu Overlay */}
+          {menuOpen && (
+            <StartMenu
+              onResume={() => setMenuOpen(false)}
+              onNewGame={() => {
+                restartGame();
+                setMenuOpen(false);
+              }}
+              onSettings={() => setMessage("Settings not implemented yet.")}
+              onQuit={handleQuit}
+            />
+          )}
+
           {gameState === 'shop' ? (
             <div style={{ width: '100%', height: '100%', overflowY: 'auto' }}>
               <Shop
@@ -671,66 +631,68 @@ function Game() {
                 <h3>{message}</h3>
               </div>
 
-              <div className="hand-area" style={{ position: 'relative' }}>
+              <div className="game-board" style={{ height: '100%', border: 'none', boxShadow: 'none' }}>
+                <div className="hand-area" style={{ position: 'relative' }}>
 
-                <div style={{ display: 'flex', gap: '20px', justifyContent: 'center' }}>
-                  {playerHands.map((hand, index) => (
-                    <div
-                      key={index}
-                      style={{
-                        opacity: index === currentHandIndex ? 1 : 0.5,
-                        border: 'none',
-                        padding: '10px',
-                        borderRadius: '10px',
-                        transition: 'all 0.3s ease',
-                        position: 'relative'
-                      }}
-                    >
-                      <h2 style={{ fontSize: '1rem', marginBottom: '5px' }}>
-                        Hand {index + 1} ({calculateHandValue(hand.cards)})
-                      </h2>
-                      <div className="cards">
-                        {hand.cards.map((card, i) => (
-                          <Card key={i} card={card} />
-                        ))}
+                  <div style={{ display: 'flex', gap: '20px', justifyContent: 'center' }}>
+                    {playerHands.map((hand, index) => (
+                      <div
+                        key={index}
+                        style={{
+                          opacity: index === currentHandIndex ? 1 : 0.5,
+                          border: 'none',
+                          padding: '10px',
+                          borderRadius: '10px',
+                          transition: 'all 0.3s ease',
+                          position: 'relative'
+                        }}
+                      >
+                        <h2 style={{ fontSize: '1rem', marginBottom: '5px' }}>
+                          Hand {index + 1} ({calculateHandValue(hand.cards)})
+                        </h2>
+                        <div className="cards">
+                          {hand.cards.map((card, i) => (
+                            <Card key={i} card={card} />
+                          ))}
+                        </div>
+                        <div style={{ marginTop: '5px', fontSize: '0.8rem', color: '#aaa' }}>
+                          Bet: ${hand.bet}
+                        </div>
+                        {/* Bet Stack for this hand */}
+                        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '5px' }}>
+                          <ChipStack amount={hand.bet} isBet={true} />
+                        </div>
                       </div>
-                      <div style={{ marginTop: '5px', fontSize: '0.8rem', color: '#aaa' }}>
-                        Bet: ${hand.bet}
-                      </div>
-                      {/* Bet Stack for this hand */}
-                      <div style={{ display: 'flex', justifyContent: 'center', marginTop: '5px' }}>
-                        <ChipStack amount={hand.bet} isBet={true} />
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
 
-              <Controls
-                onHit={hit}
-                onStand={stand}
-                onDouble={double}
-                onSplit={split}
-                onDeal={deal}
-                onKeepBet={keepBet}
-                onRebet={rebet}
-                gameState={gameState}
-                canDouble={
-                  playerHands[currentHandIndex] &&
-                  playerHands[currentHandIndex].cards.length === 2 &&
-                  chips >= playerHands[currentHandIndex].bet
-                }
-                canSplit={
-                  playerHands[currentHandIndex] &&
-                  playerHands[currentHandIndex].cards.length === 2 &&
-                  calculateHandValue([playerHands[currentHandIndex].cards[0]]) === calculateHandValue([playerHands[currentHandIndex].cards[1]]) &&
-                  chips >= playerHands[currentHandIndex].bet
-                }
-                onToggleShop={toggleShop}
-                currentBet={currentBet}
-                onChangeBet={setCurrentBet}
-                chips={chips}
-              />
+                <Controls
+                  onHit={hit}
+                  onStand={stand}
+                  onDouble={double}
+                  onSplit={split}
+                  onDeal={deal}
+                  onKeepBet={keepBet}
+                  onRebet={rebet}
+                  gameState={gameState}
+                  canDouble={
+                    playerHands[currentHandIndex] &&
+                    playerHands[currentHandIndex].cards.length === 2 &&
+                    chips >= playerHands[currentHandIndex].bet
+                  }
+                  canSplit={
+                    playerHands[currentHandIndex] &&
+                    playerHands[currentHandIndex].cards.length === 2 &&
+                    calculateHandValue([playerHands[currentHandIndex].cards[0]]) === calculateHandValue([playerHands[currentHandIndex].cards[1]]) &&
+                    chips >= playerHands[currentHandIndex].bet
+                  }
+                  onToggleShop={toggleShop}
+                  currentBet={currentBet}
+                  onChangeBet={setCurrentBet}
+                  chips={chips}
+                />
+              </div>
             </div>
           )}
         </div>,
@@ -745,24 +707,20 @@ function Game() {
           <HUD chips={chips} debt={debt} round={round} handIndex={handIndex} totalHands={HANDS_PER_ROUND} onPayDebt={payDebt} />
 
           <div style={{ flex: 1, border: '2px solid #333', padding: '0.5rem', overflowY: 'auto' }}>
-            <h3 style={{ color: '#00ffff', marginBottom: '0.5rem', fontSize: '0.8rem' }}>Active Buffs</h3>
+            <h3 style={{ color: '#00ffff', marginBottom: '0.5rem', fontSize: '1.2rem' }}>Active Buffs</h3>
             <BuffDisplay inventory={inventory} onSell={sellItem} />
           </div>
 
           <div style={{ border: '2px solid #333', padding: '0.5rem' }}>
-            <h3 style={{ color: '#ffff00', marginBottom: '0.5rem', fontSize: '0.8rem' }}>Info</h3>
-            <p style={{ fontSize: '0.6rem', color: '#aaa', margin: '0.2rem 0' }}>Dealer Trait: {dealerTrait}</p>
-            <p style={{ fontSize: '0.6rem', color: '#aaa', margin: '0.2rem 0' }}>Next Debt: ${calculateDebt(round + 1, inventory.some(i => i.id === 'charity') ? ['charity'] : [])}</p>
+            <h3 style={{ color: '#ffff00', marginBottom: '0.5rem', fontSize: '1.2rem' }}>Info</h3>
+            <p style={{ fontSize: '1rem', color: '#aaa', margin: '0.2rem 0' }}>Dealer Trait: {dealerTrait}</p>
+            <p style={{ fontSize: '1rem', color: '#aaa', margin: '0.2rem 0' }}>Next Debt: ${calculateDebt(round + 1, inventory.some(i => i.id === 'charity') ? ['charity'] : [])}</p>
           </div>
         </div>,
         rightNode
       )}
-
-
     </>
   );
-
-
 }
 
 function App() {

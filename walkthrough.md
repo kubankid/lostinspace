@@ -29,6 +29,11 @@
 - **Independent Windows**: Shop and Status windows can now be toggled independently.
 - **Zoom Disabled**: Removed zoom-on-click behavior for easier interaction with UI elements.
 - **Pressed State**: Added visual feedback for 3D buttons (Shop/Status) when active.
+- **Camera**: Fixed camera target to `[2, 1, 0]` and raised starting height to `5.0` (adjustable via `camY`).
+- **Static View**: Removed parallax effect to ensure stable UI positioning.
+- **Outlines Only**: Styled the main game board with a minimalist "outlines only" look (transparent background, subtle white border) to blend seamlessly with the cockpit.
+- **Floating Controls**: Removed borders and background from the controls container, leaving only the buttons visible.
+- **Controls Style**: Lifted controls up slightly (`margin-bottom: 4rem`) and changed button color to **cyan** to match the cockpit theme.
 
 ## Technical Details
 - **Tech Stack**: React, Three.js, React Spring, Leva.
@@ -50,10 +55,21 @@
 - Fixed `Text` component naming conflict by aliasing as `DreiText`.
 - **Debug Controls**: 
     - **Button Position**: `lbx`, `lby`, `lbz` (Left Button), `rbx`, `rby`, `rbz` (Right Button).
-    - **Window Position**: `shopWinX`, `statusWinX`, `winY`, `winZ`.
+    - **Window Position**: `shopWinX` (-8.5), `statusWinX` (11.8), `winY`, `winZ`.
+    - **Center Screen**: `cy` updated to `2.6`.
+    - **UI Sizes**: Increased font sizes for Status window and Shop buttons.
     - **Background**: `bgX`, `bgY`, `bgZ`, `bgScale` (Adjust position and scale).
     - **Fix**: Updated `CockpitBackground` to accept dynamic props.
-    - **Debug Card Button**: Removed (Verified & Integrated).
+    - **Fix**: Resolved `ReferenceError` for `camY`.
+    - **Fix**: Added 3-second delay at end of round to show final hand result.
+    - **Feature**: Added **Start Menu** (Resume, New Game, Settings, Quit).
+    - **Feature**: Added "MENU" button to HUD.
+    - **Task Update**: Added new buff ideas to `task.md`.
+    - **Feature**: Moved Start Menu to a 3D `ExpandableScreen` between Shop and Status.
+    - **Refactor**: Reverted Menu Window to 2D overlay (per user request) but kept 3D Button.
+    - **Fix**: Resolved `ReferenceError: menuOpen is not defined` by exposing state in `LayoutContext`.
+    - **Cleanup**: Removed 2D "MENU" button and debug controls.
+    - **Verification**: Confirmed `Safety Net` and `High Roller` buffs apply to all split hands.
 
 ## Verification Results
 

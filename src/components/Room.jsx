@@ -58,8 +58,6 @@ function StarField({ count = 1000 }) {
 
 import cockpitVideo from '../assets/Animatedcockpit.mp4';
 
-import { useControls, Leva } from 'leva';
-
 function CockpitBackground({ position, scale }) {
   const texture = useVideoTexture(cockpitVideo);
   texture.minFilter = THREE.NearestFilter;
@@ -195,52 +193,50 @@ function ExpandableScreen({
   );
 }
 
-function Scene({ setLeftNode, setCenterNode, setRightNode }) {
+function Scene({
+  setLeftNode, setCenterNode, setRightNode, setMenuNode,
+  shopOpen, setShopOpen,
+  statusOpen, setStatusOpen,
+  menuOpen, setMenuOpen
+}) {
   console.log('Scene rendering');
-  const [shopOpen, setShopOpen] = useState(false);
-  const [statusOpen, setStatusOpen] = useState(false);
 
-  const {
-    cx, cy, cz, crx, cry, crz, cs,
-    lbx, lby, lbz,
-    rbx, rby, rbz,
-    shopWinX, statusWinX, winY, winZ,
-    bgX, bgY, bgZ, bgScale
-  } = useControls('Layout', {
-    // Center Screen
-    cx: { value: 1.8, min: -20, max: 20, step: 0.1 },
-    cy: { value: 3.4, min: -20, max: 20, step: 0.1 },
-    cz: { value: -9.3, min: -20, max: 20, step: 0.1 },
-    crx: { value: 0, min: -Math.PI, max: Math.PI, step: 0.1 },
-    cry: { value: 0, min: -Math.PI, max: Math.PI, step: 0.1 },
-    crz: { value: 0, min: -Math.PI, max: Math.PI, step: 0.1 },
-    cs: { value: 1.2, min: 0.1, max: 5, step: 0.1 },
+  // Layout Constants (formerly from Leva)
+  const cx = 1.8;
+  const cy = 2.6;
+  const cz = -9.3;
+  const crx = 0;
+  const cry = 0;
+  const crz = 0;
+  const cs = 1.2;
 
-    // Left Button
-    lbx: { value: -2.5, min: -30, max: 30, step: 0.1 },
-    lby: { value: -1.3, min: -20, max: 20, step: 0.1 },
-    lbz: { value: 12.4, min: -20, max: 20, step: 0.1 },
+  const lbx = -2.5;
+  const lby = -1.3;
+  const lbz = 12.4;
 
-    // Right Button
-    rbx: { value: 6.5, min: -30, max: 30, step: 0.1 },
-    rby: { value: -1.4, min: -20, max: 20, step: 0.1 },
-    rbz: { value: 12.4, min: -20, max: 20, step: 0.1 },
+  const rbx = 6.5;
+  const rby = -1.4;
+  const rbz = 12.4;
+  // Menu Button Position (Between Shop and Status)
+  const mbx = 2.0;
+  const mby = -1.3;
+  const mbz = 12.4;
+  const menuWinX = 2.0; // Center aligned window
 
-    // Window Positions
-    shopWinX: { value: -5.2, min: -30, max: 30, step: 0.1 },
-    statusWinX: { value: 9, min: -30, max: 30, step: 0.1 }, // User requested 9 for Status
-    winY: { value: 4.5, min: -20, max: 20, step: 0.1 },
-    winZ: { value: 5, min: -20, max: 20, step: 0.1 },
+  const shopWinX = -8.5;
+  const statusWinX = 11.8;
+  const winY = 4.5;
+  const winZ = 5;
 
-    // Background
-    bgX: { value: 2, min: -50, max: 50, step: 0.1 },
-    bgY: { value: 1.9, min: -50, max: 50, step: 0.1 },
-    bgZ: { value: 25, min: -50, max: 50, step: 0.1 },
-    bgScale: { value: 12.5, min: 1, max: 50, step: 0.1 },
-  });
+  const bgX = 2;
+  const bgY = 1.9;
+  const bgZ = 25;
+  const bgScale = 12.5;
+
+  const camY = 5.0;
 
   // Hardcoded values based on user approval
-  const camPos = [2, 2.5, 32];
+  const camPos = [2, camY, 32];
   const camFov = 50;
   const orbitTarget = [2, 1, 0];
 
@@ -320,8 +316,45 @@ function Scene({ setLeftNode, setCenterNode, setRightNode }) {
         color="#ff00ff"
         nodeRef={setLeftNode}
         isActive={shopOpen}
-        onToggle={() => setShopOpen(!shopOpen)}
+        onToggle={() => {
+          setShopOpen(!shopOpen);
+          if (!shopOpen) {
+            setStatusOpen(false);
+            setMenuOpen(false);
+          }
+        }}
       />
+
+      {/* Center Button (Standalone) - MENU */}
+      <group position={[mbx, mby, mbz]} rotation={[0, 0, 0]}>
+        <Html transform position={[0, 0, 0]} style={{ pointerEvents: 'auto' }}>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setMenuOpen(!menuOpen);
+              if (!menuOpen) {
+                setShopOpen(false);
+                setStatusOpen(false);
+              }
+            }}
+            style={{
+              padding: '10px 20px',
+              background: menuOpen ? '#00ffff' : '#333',
+              color: menuOpen ? '#000000' : '#ffffff',
+              border: '1px solid #555',
+              fontFamily: '"Press Start 2P", cursive',
+              fontSize: '0.8rem',
+              boxShadow: menuOpen ? 'none' : `4px 4px 0 #00ffff`,
+              transform: menuOpen ? 'translate(2px, 2px)' : 'none',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              transition: 'all 0.1s ease'
+            }}
+          >
+            MENU
+          </button>
+        </Html>
+      </group>
 
       {/* Right Screen (Expandable) - STATUS */}
       <ExpandableScreen
@@ -339,7 +372,13 @@ function Scene({ setLeftNode, setCenterNode, setRightNode }) {
         color="#00ff00"
         nodeRef={setRightNode}
         isActive={statusOpen}
-        onToggle={() => setStatusOpen(!statusOpen)}
+        onToggle={() => {
+          setStatusOpen(!statusOpen);
+          if (!statusOpen) {
+            setShopOpen(false);
+            setMenuOpen(false);
+          }
+        }}
       />
     </>
   );
@@ -350,16 +389,28 @@ function Room({ children }) {
   const [leftNode, setLeftNode] = useState(null);
   const [centerNode, setCenterNode] = useState(null);
   const [rightNode, setRightNode] = useState(null);
+  const [menuNode, setMenuNode] = useState(null);
+
+  const [shopOpen, setShopOpen] = useState(false);
+  const [statusOpen, setStatusOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <LayoutProvider value={{ leftNode, centerNode, rightNode }}>
+    <LayoutProvider value={{
+      leftNode, centerNode, rightNode, menuNode,
+      shopOpen, statusOpen, menuOpen,
+      setShopOpen, setStatusOpen, setMenuOpen
+    }}>
       <div style={{ width: '100vw', height: '100vh', background: '#000' }}>
-        <Leva theme={{ sizes: { rootWidth: '300px' }, colors: { elevation1: '#333' } }} />
         <Canvas gl={{ antialias: true }}>
           <Scene
             setLeftNode={setLeftNode}
             setCenterNode={setCenterNode}
             setRightNode={setRightNode}
+            setMenuNode={setMenuNode}
+            shopOpen={shopOpen} setShopOpen={setShopOpen}
+            statusOpen={statusOpen} setStatusOpen={setStatusOpen}
+            menuOpen={menuOpen} setMenuOpen={setMenuOpen}
           />
         </Canvas>
         {/* Render children (Game) outside Canvas so it can use DOM portals */}

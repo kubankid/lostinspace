@@ -73,14 +73,15 @@ const Shop = ({ items, ownedItems, buyItem, chips, onClose, refreshCost, onRefre
                     onClick={onRefresh}
                     disabled={chips < refreshCost}
                     style={{
-                        padding: '10px',
+                        padding: '15px',
                         background: 'transparent',
                         border: '1px solid #00ffff',
                         color: '#00ffff',
                         cursor: chips >= refreshCost ? 'pointer' : 'not-allowed',
                         borderRadius: '4px',
                         fontWeight: 'bold',
-                        opacity: chips >= refreshCost ? 1 : 0.5
+                        opacity: chips >= refreshCost ? 1 : 0.5,
+                        fontSize: '1.5em'
                     }}
                 >
                     REFRESH SHOP (${refreshCost})
@@ -89,14 +90,14 @@ const Shop = ({ items, ownedItems, buyItem, chips, onClose, refreshCost, onRefre
                 <button
                     onClick={onClose}
                     style={{
-                        padding: '12px',
+                        padding: '15px',
                         background: '#ff0000',
                         border: 'none',
                         color: '#fff',
                         cursor: 'pointer',
                         borderRadius: '4px',
                         fontWeight: 'bold',
-                        fontSize: '1.1em'
+                        fontSize: '1.5em'
                     }}
                 >
                     Back to Game
