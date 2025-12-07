@@ -781,6 +781,7 @@ function Game() {
       <button
         onClick={() => setShowDebugger(!showDebugger)}
         style={{
+          display: 'none', // Hidden - remove this line to show button again
           position: 'fixed',
           top: '10px',
           left: '10px',
