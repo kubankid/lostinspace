@@ -49,7 +49,7 @@ function Game() {
   }, []);
 
   // Layout Debugger State
-  const [showDebugger, setShowDebugger] = useState(true); // Show for adjustments
+  const [showDebugger, setShowDebugger] = useState(false); // Hidden by default
   const [tableOffsetY, setTableOffsetY] = useState(-1.5);
   const [tableOffsetX, setTableOffsetX] = useState(0);
   const [dealerCardsOffsetY, setDealerCardsOffsetY] = useState(0);
